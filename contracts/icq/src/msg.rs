@@ -23,7 +23,6 @@ pub struct MigrateMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
-    /// This accepts a properly-encoded ReceiveMsg from a cw20 contract
     Query(ICQQueryMsg),
     /// Change the admin (must be called by current admin)
     UpdateAdmin { admin: String },

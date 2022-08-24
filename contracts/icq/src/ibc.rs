@@ -48,10 +48,6 @@ fn ack_success() -> Binary {
     to_binary(&res).unwrap()
 }
 
-const RECEIVE_ID: u64 = 1337;
-const ACK_FAILURE_ID: u64 = 0xfa17;
-
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 /// enforces ordering and versioning constraints
 pub fn ibc_channel_open(
@@ -164,7 +160,7 @@ fn on_packet_success(_deps: DepsMut, packet: IbcPacket) -> Result<IbcBasicRespon
     // Can further deserialize inner data (abci.ResponseQuery)
     let attributes = vec![
         attr("action", "acknowledge"),
-        attr("msg.len()", msg.len().to_string()),
+        attr("msg.len()", msg.data.len().to_string()),
         attr("success", "true"),
     ];
 
@@ -181,7 +177,7 @@ fn on_packet_failure(
 
     let attributes = vec![
         attr("action", "acknowledge"),
-        attr("msg.len()", msg.len().to_string()),
+        attr("msg.len()", msg.data.len().to_string()),
         attr("success", "false"),
         attr("error", err),
     ];

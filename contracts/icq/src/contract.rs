@@ -20,7 +20,7 @@ use crate::state::{
 use cw_utils::{maybe_addr, nonpayable, one_coin};
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:cw20-ics20";
+const CONTRACT_NAME: &str = "crates.io:icq";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -77,6 +77,7 @@ pub fn execute_query(
 	};
 	// timeout is in nanoseconds
 	let timeout = env.block.time.plus_seconds(timeout_delta);
+    let num_requests = msg.requests.len();
 	// prepare ibc message
 	let msg = IbcMsg::Query {
 		channel_id: msg.channel,
@@ -88,7 +89,7 @@ pub fn execute_query(
 	let res = Response::new()
 		.add_message(msg)
 		.add_attribute("action", "query")
-		.add_attribute("num_requests", msg.requests.len().to_string());
+		.add_attribute("num_requests", num_requests.to_string());
 	Ok(res)
 }
 
@@ -183,6 +184,6 @@ mod test {
             },
         )
         .unwrap_err();
-        assert_eq!(err, StdError::not_found("cw20_ics20::state::ChannelInfo"));
+        assert_eq!(err, StdError::not_found("icq::state::ChannelInfo"));
     }
 }
