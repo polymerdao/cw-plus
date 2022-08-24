@@ -6,13 +6,8 @@ use crate::state::ChannelInfo;
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
 pub struct InitMsg {
-    /// Default timeout for ics20 packets, specified in seconds
+    /// Default timeout for icq packets, specified in seconds
     pub default_timeout: u64,
-    /// who can allow more contracts
-    pub gov_contract: String,
-    /// If set, contracts off the allowlist will run with this gas limit.
-    /// If unset, will refuse to accept any contract off the allow list.
-    pub default_gas_limit: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
