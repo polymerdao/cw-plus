@@ -23,7 +23,6 @@ pub struct ChannelState {
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {
     pub default_timeout: u64,
-    pub default_gas_limit: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
