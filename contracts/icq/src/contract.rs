@@ -167,8 +167,6 @@ mod test {
         .unwrap();
         let chan_res: ChannelResponse = from_binary(&raw_channel).unwrap();
         assert_eq!(chan_res.info, mock_channel_info("channel-3"));
-        assert_eq!(0, chan_res.total_sent.len());
-        assert_eq!(0, chan_res.balances.len());
 
         let err = query(
             deps.as_ref(),

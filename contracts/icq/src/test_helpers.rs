@@ -70,10 +70,10 @@ pub fn setup(
 
     // instantiate an empty contract
     let instantiate_msg = InitMsg {
-        default_gas_limit: None,
+        //default_gas_limit: None,
         default_timeout: DEFAULT_TIMEOUT,
-        gov_contract: "gov".to_string(),
-        allowlist,
+        //gov_contract: "gov".to_string(),
+        //allowlist,
     };
     let info = mock_info(&String::from("anyone"), &[]);
     let res = instantiate(deps.as_mut(), mock_env(), info, instantiate_msg).unwrap();
