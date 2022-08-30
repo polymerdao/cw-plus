@@ -181,7 +181,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-crypto"
 version = "1.0.0"
-source = "git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a#39b60208a55f847053e02dac4e65042b7f840c1a"
+source = "git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639#710c31e12de5decedb6dbb0f322f2feaeeede639"
 dependencies = [
  "digest",
  "ed25519-zebra",
@@ -202,7 +202,7 @@ dependencies = [
 [[package]]
 name = "cosmwasm-derive"
 version = "1.0.0"
-source = "git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a#39b60208a55f847053e02dac4e65042b7f840c1a"
+source = "git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639#710c31e12de5decedb6dbb0f322f2feaeeede639"
 dependencies = [
  "syn",
 ]
@@ -237,11 +237,11 @@ dependencies = [
 [[package]]
 name = "cosmwasm-std"
 version = "1.0.0"
-source = "git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a#39b60208a55f847053e02dac4e65042b7f840c1a"
+source = "git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639#710c31e12de5decedb6dbb0f322f2feaeeede639"
 dependencies = [
  "base64",
- "cosmwasm-crypto 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a)",
- "cosmwasm-derive 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a)",
+ "cosmwasm-crypto 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639)",
+ "cosmwasm-derive 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639)",
  "forward_ref",
  "schemars",
  "serde",
@@ -417,7 +417,7 @@ dependencies = [
 name = "cw-controllers"
 version = "0.14.0"
 dependencies = [
- "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a)",
+ "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639)",
  "cw-storage-plus",
  "cw-utils",
  "schemars",
@@ -456,7 +456,7 @@ dependencies = [
 name = "cw-storage-plus"
 version = "0.14.0"
 dependencies = [
- "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a)",
+ "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639)",
  "criterion",
  "cw-storage-macro",
  "rand",
@@ -468,7 +468,7 @@ dependencies = [
 name = "cw-utils"
 version = "0.14.0"
 dependencies = [
- "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a)",
+ "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639)",
  "cw-storage-plus",
  "cw2",
  "prost",
@@ -573,7 +573,7 @@ dependencies = [
 name = "cw2"
 version = "0.14.0"
 dependencies = [
- "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a)",
+ "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639)",
  "cw-storage-plus",
  "schemars",
  "serde",
@@ -584,7 +584,7 @@ name = "cw20"
 version = "0.14.0"
 dependencies = [
  "cosmwasm-schema",
- "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a)",
+ "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639)",
  "cw-utils",
  "schemars",
  "serde",
@@ -903,7 +903,7 @@ name = "icq"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",
- "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=39b60208a55f847053e02dac4e65042b7f840c1a)",
+ "cosmwasm-std 1.0.0 (git+https://github.com/polymerdao/cosmwasm?rev=710c31e12de5decedb6dbb0f322f2feaeeede639)",
  "cw-controllers",
  "cw-storage-plus",
  "cw-utils",
