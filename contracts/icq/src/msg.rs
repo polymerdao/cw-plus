@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use cosmwasm_std::{ RequestQuery };
 
+use cosmwasm_std::{Binary};
 use crate::state::ChannelInfo;
 
 #[derive(Serialize, Deserialize, Clone, Debug, JsonSchema)]
@@ -19,8 +19,6 @@ pub struct MigrateMsg {
 #[serde(rename_all = "snake_case")]
 pub enum ExecuteMsg {
     Query(ICQQueryMsg),
-    /// Change the admin (must be called by current admin)
-    UpdateAdmin { admin: String },
 }
 
 /// This is the message we accept via Receive
@@ -31,6 +29,19 @@ pub struct ICQQueryMsg {
     pub requests: Vec<RequestQuery>,
     // How long the packet lives in seconds. If not specified, use default_timeout
     pub timeout: Option<u64>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct RequestQuery {
+    pub data: Binary,
+    pub path: String,
+    pub height: Option<i64>,
+    pub prove: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct InterchainQueryPacketData {
+    pub data: Binary,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -45,8 +56,6 @@ pub enum QueryMsg {
     Channel { id: String },
     /// Show the Config. Returns ConfigResponse (currently including admin as well)
     Config {},
-    /// Return AdminResponse
-    Admin {},
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]

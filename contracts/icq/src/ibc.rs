@@ -2,12 +2,13 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use cosmwasm_std::{
-    attr, entry_point, from_binary, to_binary, Binary, CosmosMsg, Deps, DepsMut, Env,
+    attr, entry_point, from_binary, Binary, DepsMut, Env,
     IbcBasicResponse, IbcChannel, IbcChannelCloseMsg, IbcChannelConnectMsg, IbcChannelOpenMsg,
-    IbcEndpoint, IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg,
-    IbcReceiveResponse, Reply, Response, SubMsg, SubMsgResult, Uint128, WasmMsg,
+    IbcOrder, IbcPacket, IbcPacketAckMsg, IbcPacketReceiveMsg, IbcPacketTimeoutMsg,
+    IbcReceiveResponse,
 };
 
+use crate::msg::{RequestQuery};
 use crate::error::{ContractError, Never};
 use crate::state::{
     ChannelInfo, CHANNEL_INFO
@@ -40,12 +41,6 @@ impl InterchainQueryPacketAck {
 pub enum IcsAck {
     Result(Binary),
     Error(String),
-}
-
-// create a serialized success message
-fn ack_success() -> Binary {
-    let res = IcsAck::Result(b"1".into());
-    to_binary(&res).unwrap()
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -117,9 +112,9 @@ pub fn ibc_channel_close(
 /// Check to see if we have any balance here
 /// We should not return an error if possible, but rather an acknowledgement of failure
 pub fn ibc_packet_receive(
-    deps: DepsMut,
+    _deps: DepsMut,
     _env: Env,
-    msg: IbcPacketReceiveMsg,
+    _msg: IbcPacketReceiveMsg,
 ) -> Result<IbcReceiveResponse, Never> {
     // Contract does not handle packets/queries.
     unimplemented!();
@@ -135,8 +130,8 @@ pub fn ibc_packet_ack(
     // Design decision: should we trap error like in receive?
     // TODO: unsure... as it is now a failed ack handling would revert the tx and would be
     // retried again and again. is that good?
-    let icsMsg: IcsAck = from_binary(&msg.acknowledgement.data)?;
-    match icsMsg {
+    let ics_msg: IcsAck = from_binary(&msg.acknowledgement.data)?;
+    match ics_msg {
         IcsAck::Result(_) => on_packet_success(deps, msg.original_packet),
         IcsAck::Error(err) => on_packet_failure(deps, msg.original_packet, err),
     }
@@ -155,12 +150,13 @@ pub fn ibc_packet_timeout(
 }
 
 fn on_packet_success(_deps: DepsMut, packet: IbcPacket) -> Result<IbcBasicResponse, ContractError> {
-    let msg: InterchainQueryPacketAck = from_binary(&packet.data)?;
+    let ack: InterchainQueryPacketAck = from_binary(&packet.data)?;
 
     // Can further deserialize inner data (abci.ResponseQuery)
+    let msgs: Vec<RequestQuery> = from_binary(&ack.data)?;
     let attributes = vec![
         attr("action", "acknowledge"),
-        attr("msg.len()", msg.data.len().to_string()),
+        attr("num_messages", msgs.len().to_string()),
         attr("success", "true"),
     ];
 
@@ -169,7 +165,7 @@ fn on_packet_success(_deps: DepsMut, packet: IbcPacket) -> Result<IbcBasicRespon
 
 // return the tokens to sender
 fn on_packet_failure(
-    deps: DepsMut,
+    _deps: DepsMut,
     packet: IbcPacket,
     err: String,
 ) -> Result<IbcBasicResponse, ContractError> {

@@ -1,23 +1,21 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, MessageInfo, Order,
-    PortIdResponse, Response, StdError, StdResult,
+    to_binary, Binary, Deps, DepsMut, Env, IbcMsg, IbcQuery, MessageInfo, Order,
+    PortIdResponse, Response, StdResult,
 };
-use semver::Version;
 
-use cw2::{get_contract_version, set_contract_version};
-use cw_storage_plus::Bound;
+use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::msg::{
     ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg,
     ListChannelsResponse, MigrateMsg, PortResponse, QueryMsg, ICQQueryMsg,
+    InterchainQueryPacketData,
 };
 use crate::state::{
-    Config, ADMIN, CHANNEL_INFO, CONFIG,
+    Config, CHANNEL_INFO, CONFIG,
 };
-use cw_utils::{maybe_addr, nonpayable, one_coin};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:icq";
@@ -25,7 +23,7 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
-    mut deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
     _info: MessageInfo,
     msg: InitMsg,
@@ -42,16 +40,12 @@ pub fn instantiate(
 pub fn execute(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Query(msg) => {
             execute_query(deps, env, msg)
-        }
-        ExecuteMsg::UpdateAdmin { admin } => {
-            let admin = deps.api.addr_validate(&admin)?;
-            Ok(ADMIN.execute_update_admin(deps, info, Some(admin))?)
         }
     }
 }
@@ -66,31 +60,35 @@ pub fn execute_query(
         return Err(ContractError::NoSuchChannel { id: msg.channel });
     }
     let config = CONFIG.load(deps.storage)?;
-	// delta from user is in seconds
-	let timeout_delta = match msg.timeout {
-		Some(t) => t,
-		None => config.default_timeout,
-	};
-	// timeout is in nanoseconds
-	let timeout = env.block.time.plus_seconds(timeout_delta);
+    // delta from user is in seconds
+    let timeout_delta = match msg.timeout {
+            Some(t) => t,
+            None => config.default_timeout,
+    };
+    // timeout is in nanoseconds
+    let timeout = env.block.time.plus_seconds(timeout_delta);
     let num_requests = msg.requests.len();
-	// prepare ibc message
-	let msg = IbcMsg::Query {
-		channel_id: msg.channel,
-		requests: msg.requests,
-		timeout: timeout.into(),
-	};
+    
+    let packet = InterchainQueryPacketData {
+        data: to_binary(&msg.requests)?,
+    };
+    // prepare ibc message
+    let msg = IbcMsg::SendPacket {
+            channel_id: msg.channel,
+            data: to_binary(&packet)?,
+            timeout: timeout.into(),
+    };
 
-	// send response
-	let res = Response::new()
-		.add_message(msg)
-		.add_attribute("action", "query")
-		.add_attribute("num_requests", num_requests.to_string());
-	Ok(res)
+    // send response
+    let res = Response::new()
+            .add_message(msg)
+            .add_attribute("action", "query")
+            .add_attribute("num_requests", num_requests.to_string());
+    Ok(res)
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(mut deps: DepsMut, env: Env, msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     Ok(Response::new())
 }
 
@@ -101,7 +99,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListChannels {} => to_binary(&query_list(deps)?),
         QueryMsg::Channel { id } => to_binary(&query_channel(deps, id)?),
         QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::Admin {} => to_binary(&ADMIN.query_admin(deps)?),
     }
 }
 
@@ -129,7 +126,6 @@ pub fn query_channel(deps: Deps, id: String) -> StdResult<ChannelResponse> {
 
 fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let cfg = CONFIG.load(deps.storage)?;
-    let admin = ADMIN.get(deps)?.unwrap_or_else(|| Addr::unchecked(""));
     let res = ConfigResponse {
         default_timeout: cfg.default_timeout,
     };
@@ -142,14 +138,12 @@ mod test {
     use crate::test_helpers::*;
 
     use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
-    use cosmwasm_std::{coin, coins, CosmosMsg, IbcMsg, StdError, Uint128};
-
-    use crate::state::ChannelState;
-    use cw_utils::PaymentError;
+    use cosmwasm_std::{from_binary, coins, CosmosMsg, StdError, Uint128};
+    use crate::msg::RequestQuery;
 
     #[test]
     fn setup_and_query() {
-        let deps = setup(&["channel-3", "channel-7"], &[]);
+        let deps = setup(&["channel-3", "channel-7"]);
 
         let raw_list = query(deps.as_ref(), mock_env(), QueryMsg::ListChannels {}).unwrap();
         let list_res: ListChannelsResponse = from_binary(&raw_list).unwrap();
@@ -178,4 +172,40 @@ mod test {
         .unwrap_err();
         assert_eq!(err, StdError::not_found("icq::state::ChannelInfo"));
     }
+
+    #[test]
+    fn execute_query_success() {
+        let send_channel = "channel-5";
+        let mut deps = setup(&[send_channel, "channel-10"]);
+
+        let requests = vec![RequestQuery {
+            data: Binary::from([0, 1, 0, 1]),
+            path: "/path".to_string(),
+            height: None,
+            prove: None,
+        }];
+        let q = ICQQueryMsg {
+            channel: send_channel.to_string(),
+            requests,
+            timeout: None,
+        };
+
+        let msg = ExecuteMsg::Query(q.clone());
+        let info = mock_info("foobar", &[]);
+        let res = execute(deps.as_mut(), mock_env(), info, msg).unwrap();
+	if let CosmosMsg::Ibc(IbcMsg::SendPacket {
+	    channel_id,
+	    data,
+	    timeout,
+	}) = &res.messages[0].msg
+	{
+	    let expected_timeout = mock_env().block.time.plus_seconds(DEFAULT_TIMEOUT);
+	    assert_eq!(timeout, &expected_timeout.into());
+	    assert_eq!(channel_id.as_str(), send_channel);
+	    let msg: InterchainQueryPacketData = from_binary(data).unwrap();
+	} else {
+	    panic!("Unexpected return message: {:?}", res.messages[0]);
+	}
+    }
 }
+
