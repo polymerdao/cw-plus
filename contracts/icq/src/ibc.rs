@@ -1,3 +1,5 @@
+use prost::Message;
+use prost::bytes::Bytes;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -8,10 +10,10 @@ use cosmwasm_std::{
     IbcReceiveResponse,
 };
 
-use crate::msg::{RequestQuery};
 use crate::error::{ContractError, Never};
+use crate::proto::CosmosResponse;
 use crate::state::{
-    ChannelInfo, CHANNEL_INFO
+    ChannelInfo, CHANNEL_INFO, QUERY_RESULT_COUNTER
 };
 
 pub const ICQ_VERSION: &str = "icq-1";
@@ -149,31 +151,36 @@ pub fn ibc_packet_timeout(
     on_packet_failure(deps, packet, "timeout".to_string())
 }
 
-fn on_packet_success(_deps: DepsMut, packet: IbcPacket) -> Result<IbcBasicResponse, ContractError> {
+fn on_packet_success(deps: DepsMut, packet: IbcPacket) -> Result<IbcBasicResponse, ContractError> {
     let ack: InterchainQueryPacketAck = from_binary(&packet.data)?;
 
-    // Can further deserialize inner data (abci.ResponseQuery)
-    let msgs: Vec<RequestQuery> = from_binary(&ack.data)?;
+    let buf = Bytes::copy_from_slice(ack.data.as_slice());
+    let resp: CosmosResponse = match CosmosResponse::decode(buf) {
+        Ok(resp) => resp,
+        Err(_) => return Err(ContractError::DecodingFail {}),
+    };
+
     let attributes = vec![
         attr("action", "acknowledge"),
-        attr("num_messages", msgs.len().to_string()),
+        attr("num_messages", resp.responses.len().to_string()),
         attr("success", "true"),
     ];
+
+    // Store result counter.
+    let mut counter = QUERY_RESULT_COUNTER.load(deps.storage)?;
+    counter += resp.responses.len() as u64;
+    QUERY_RESULT_COUNTER.save(deps.storage, &counter)?;
 
     Ok(IbcBasicResponse::new().add_attributes(attributes))
 }
 
-// return the tokens to sender
 fn on_packet_failure(
     _deps: DepsMut,
-    packet: IbcPacket,
+    _packet: IbcPacket,
     err: String,
 ) -> Result<IbcBasicResponse, ContractError> {
-    let msg: InterchainQueryPacketAck = from_binary(&packet.data)?;
-
     let attributes = vec![
         attr("action", "acknowledge"),
-        attr("msg.len()", msg.data.len().to_string()),
         attr("success", "false"),
         attr("error", err),
     ];

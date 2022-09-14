@@ -1,13 +1,15 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{IbcEndpoint};
+use cosmwasm_std::IbcEndpoint;
 use cw_storage_plus::{Item, Map};
 
 pub const CONFIG: Item<Config> = Item::new("icq_config");
 
 /// static info on one channel that doesn't change
 pub const CHANNEL_INFO: Map<&str, ChannelInfo> = Map::new("channel_info");
+
+pub const QUERY_RESULT_COUNTER: Item<u64> = Item::new("query_result_counter");
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, JsonSchema, Debug)]
 pub struct Config {

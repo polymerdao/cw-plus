@@ -1,3 +1,4 @@
+use prost::Message;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -6,7 +7,9 @@ use cosmwasm_std::{
 };
 
 use cw2::set_contract_version;
+use tendermint_proto::abci::RequestQuery;
 
+use crate::proto::CosmosQuery;
 use crate::error::ContractError;
 use crate::msg::{
     ChannelResponse, ConfigResponse, ExecuteMsg, InitMsg,
@@ -14,7 +17,7 @@ use crate::msg::{
     InterchainQueryPacketData,
 };
 use crate::state::{
-    Config, CHANNEL_INFO, CONFIG,
+    Config, CHANNEL_INFO, CONFIG, QUERY_RESULT_COUNTER,
 };
 
 // version info for migration info
@@ -33,6 +36,7 @@ pub fn instantiate(
         default_timeout: msg.default_timeout,
     };
     CONFIG.save(deps.storage, &cfg)?;
+    QUERY_RESULT_COUNTER.save(deps.storage, &0)?;
     Ok(Response::default())
 }
 
@@ -68,12 +72,23 @@ pub fn execute_query(
     // timeout is in nanoseconds
     let timeout = env.block.time.plus_seconds(timeout_delta);
     let num_requests = msg.requests.len();
-    
-    let packet = InterchainQueryPacketData {
-        data: to_binary(&msg.requests)?,
+
+    let q = CosmosQuery{
+        requests: msg.requests.iter().map(|req| RequestQuery{
+            data: req.data.clone().into(),
+            path: req.path.clone(),
+            height: req.height,
+            prove: req.prove,
+        }).collect::<Vec<RequestQuery>>(),
     };
+    let mut data = Vec::new();
+    if q.encode(&mut data).is_err() {
+        return Err(ContractError::EncodingFail {});
+    }
+
+    let packet = InterchainQueryPacketData { data };
     // prepare ibc message
-    let msg = IbcMsg::SendPacket {
+    let send_packet_msg = IbcMsg::SendPacket {
             channel_id: msg.channel,
             data: to_binary(&packet)?,
             timeout: timeout.into(),
@@ -81,7 +96,7 @@ pub fn execute_query(
 
     // send response
     let res = Response::new()
-            .add_message(msg)
+            .add_message(send_packet_msg)
             .add_attribute("action", "query")
             .add_attribute("num_requests", num_requests.to_string());
     Ok(res)
@@ -139,7 +154,6 @@ mod test {
 
     use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
     use cosmwasm_std::{from_binary, coins, CosmosMsg, StdError, Uint128};
-    use crate::msg::RequestQuery;
 
     #[test]
     fn setup_and_query() {

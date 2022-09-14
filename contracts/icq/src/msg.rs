@@ -26,22 +26,30 @@ pub enum ExecuteMsg {
 pub struct ICQQueryMsg {
     /// The local channel to send the packets on
     pub channel: String,
-    pub requests: Vec<RequestQuery>,
+    pub requests: Vec<RequestQueryJSON>,
     // How long the packet lives in seconds. If not specified, use default_timeout
     pub timeout: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct RequestQuery {
+pub struct RequestQueryJSON {
     pub data: Binary,
     pub path: String,
-    pub height: Option<i64>,
-    pub prove: Option<bool>,
+    pub height: i64,
+    pub prove: bool,
+}
+
+// ResponseQuery does not contain all of the response fields.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ResponseQuery {
+    pub key: Binary,
+    pub value: String,
+    pub height: i64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InterchainQueryPacketData {
-    pub data: Binary,
+    pub data: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

@@ -33,6 +33,12 @@ pub enum ContractError {
     #[error("Cannot migrate from unsupported version: {previous_version}")]
     CannotMigrateVersion { previous_version: String },
 
+    #[error("Failed to proto encode")]
+    EncodingFail,
+
+    #[error("Failed to proto decode")]
+    DecodingFail,
+
     #[error("Only the governance contract can do this")]
     Unauthorized,
 }
