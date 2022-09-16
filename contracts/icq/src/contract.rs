@@ -150,10 +150,11 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::msg::RequestQueryJSON;
     use crate::test_helpers::*;
 
-    use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
-    use cosmwasm_std::{from_binary, coins, CosmosMsg, StdError, Uint128};
+    use cosmwasm_std::testing::{mock_env, mock_info};
+    use cosmwasm_std::{from_binary, CosmosMsg, StdError};
 
     #[test]
     fn setup_and_query() {
@@ -192,11 +193,11 @@ mod test {
         let send_channel = "channel-5";
         let mut deps = setup(&[send_channel, "channel-10"]);
 
-        let requests = vec![RequestQuery {
+        let requests = vec![RequestQueryJSON {
             data: Binary::from([0, 1, 0, 1]),
             path: "/path".to_string(),
-            height: None,
-            prove: None,
+            height: 0,
+            prove: false,
         }];
         let q = ICQQueryMsg {
             channel: send_channel.to_string(),
@@ -216,7 +217,7 @@ mod test {
 	    let expected_timeout = mock_env().block.time.plus_seconds(DEFAULT_TIMEOUT);
 	    assert_eq!(timeout, &expected_timeout.into());
 	    assert_eq!(channel_id.as_str(), send_channel);
-	    let msg: InterchainQueryPacketData = from_binary(data).unwrap();
+	    let _: InterchainQueryPacketData = from_binary(data).unwrap();
 	} else {
 	    panic!("Unexpected return message: {:?}", res.messages[0]);
 	}

@@ -134,7 +134,7 @@ pub fn ibc_packet_ack(
     // retried again and again. is that good?
     let ics_msg: IcsAck = from_binary(&msg.acknowledgement.data)?;
     match ics_msg {
-        IcsAck::Result(_) => on_packet_success(deps, msg.original_packet),
+        IcsAck::Result(data) => on_packet_success(deps, data),
         IcsAck::Error(err) => on_packet_failure(deps, msg.original_packet, err),
     }
 }
@@ -151,8 +151,8 @@ pub fn ibc_packet_timeout(
     on_packet_failure(deps, packet, "timeout".to_string())
 }
 
-fn on_packet_success(deps: DepsMut, packet: IbcPacket) -> Result<IbcBasicResponse, ContractError> {
-    let ack: InterchainQueryPacketAck = from_binary(&packet.data)?;
+fn on_packet_success(deps: DepsMut, data: Binary) -> Result<IbcBasicResponse, ContractError> {
+    let ack: InterchainQueryPacketAck = from_binary(&data)?;
 
     let buf = Bytes::copy_from_slice(ack.data.as_slice());
     let resp: CosmosResponse = match CosmosResponse::decode(buf) {
@@ -186,4 +186,38 @@ fn on_packet_failure(
     ];
 
     Ok(IbcBasicResponse::new().add_attributes(attributes))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::ContractError;
+
+    use cosmwasm_std::testing::{mock_dependencies, mock_env};
+    use cosmwasm_std::{Binary, IbcAcknowledgement, IbcPacket, IbcTimeout, IbcEndpoint, Timestamp};
+
+    #[test]
+    fn test_ibc_packet_ack() -> Result<(), ContractError> {
+        let mut deps = mock_dependencies();
+        let timeout = IbcTimeout::with_timestamp(Timestamp::from_nanos(0));
+        let src = IbcEndpoint {
+            port_id: "port-0".to_string(),
+            channel_id: "channel-0".to_string(),
+        };
+        let dest = IbcEndpoint {
+            port_id: "port-1".to_string(),
+            channel_id: "channel-1".to_string(),
+        };
+        let packet = IbcPacket::new(Binary::default(), src, dest, 0, timeout);
+        let ack = IbcAcknowledgement::new(Binary::from_base64("eyJyZXN1bHQiOiJleUprWVhSaElqb2lRMmRaU1VWcmFXUnpaMFU5SW4wPSJ9")?);
+        let msg = IbcPacketAckMsg::new(ack, packet);
+        QUERY_RESULT_COUNTER.save(deps.as_mut().storage, &0)?; // Save a 0 
+        match ibc_packet_ack(deps.as_mut(), mock_env(), msg) {
+            Ok(_) => {
+                assert_eq!(QUERY_RESULT_COUNTER.load(deps.as_mut().storage)?, 1);
+                Ok(())
+            },
+            Err(err) => Err(err),
+        }
+    }
 }
